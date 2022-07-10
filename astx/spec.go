@@ -50,6 +50,7 @@ type FieldSpec struct {
 	Struct string
 	Name   string
 	Type   string
+	Ptr    bool
 	Tags   []*TagSpec
 }
 
@@ -83,6 +84,7 @@ type ParamSpec struct {
 	Pkg      string
 	FuncName string
 	Name     string
+	Ptr      bool
 	Type     string
 }
 

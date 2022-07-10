@@ -94,6 +94,32 @@ func (psr parser) ParseStructs(aw *astx.Astx) *astx.PackageSpec {
 									Tags:   make([]*astx.TagSpec, 0),
 								}
 
+								// handle field's type
+								switch expr := field.Type.(type) {
+								case *ast.Ident: // Xxx Yyy `k:"v"`
+									fs.Type = expr.Name
+								case *ast.StarExpr: // Xxx *Yyy `k:"v"`
+									switch starExpr := expr.X.(type) {
+									case *ast.SelectorExpr:
+										if sx, oke := starExpr.X.(*ast.Ident); oke {
+											fs.Type = fmt.Sprintf("*%s.%s", sx.Name, starExpr.Sel.Name)
+										} else {
+											fs.Type = fmt.Sprintf("*%s", starExpr.Sel.Name)
+										}
+									case *ast.Ident:
+										fs.Type = fmt.Sprintf("*%s", starExpr.Name)
+									}
+
+									fs.Ptr = true
+								case *ast.SelectorExpr: //  Xxx yyy.Zzz `k:"v"`
+									if sx, oke := expr.X.(*ast.Ident); oke {
+										fs.Type = fmt.Sprintf("%s.%s", sx.Name, expr.Sel.Name)
+									} else {
+										fs.Type = expr.Sel.Name
+									}
+								}
+
+								// handle field's tag
 								if fieldTag := field.Tag; fieldTag != nil {
 									tagValue := fieldTag.Value               // `xxx:"xv" yyy:"yv"`
 									tagValue = tagValue[1 : len(tagValue)-1] // xxx:"xv" yyy:"yv"
@@ -201,15 +227,34 @@ func (psr parser) ParseMethods(aw *astx.Astx, ps *astx.PackageSpec) {
 												Pkg:      ps.Pkg,
 												FuncName: funcDecl.Name.String(),
 												Name:     pn.Name,
+												Ptr:      false,
 											}
-											if expr, ok := param.Type.(*ast.SelectorExpr); ok {
-												sel := expr.Sel
-												if x, okx := expr.X.(*ast.Ident); okx {
 
-													pt := fmt.Sprintf("%s.%s", x.Name, sel.Name)
-													pms.Type = pt
+											switch expr := param.Type.(type) {
+											case *ast.Ident:
+												pms.Type = expr.Name
+											case *ast.StarExpr:
+												switch starExpr := expr.X.(type) {
+												case *ast.Ident:
+													pms.Type = starExpr.Name
+												case *ast.SelectorExpr:
+													if x, okx := starExpr.X.(*ast.Ident); okx {
+														pt := fmt.Sprintf("*%s.%s", x.Name, starExpr.Sel.Name)
+														pms.Type = pt
+													} else {
+														pt := fmt.Sprintf("*%s", starExpr.Sel.Name)
+														pms.Type = pt
+													}
+												}
+												pms.Ptr = true
+											case *ast.SelectorExpr:
+												if x, okx := expr.X.(*ast.Ident); okx {
+													pms.Type = fmt.Sprintf("%s.%s", x.Name, expr.Sel.Name)
+												} else {
+													pms.Type = expr.Sel.Name
 												}
 											}
+
 											ms.Params = append(ms.Params, pms)
 										}
 									}
