@@ -17,7 +17,9 @@
 package parser
 
 import (
+	"fmt"
 	"go/ast"
+	"strings"
 
 	"github.com/photowey/parsergo/astx"
 	"github.com/photowey/parsergo/loader"
@@ -76,12 +78,47 @@ func (psr parser) ParseStructs(aw *astx.Astx) *astx.PackageSpec {
 						}
 
 						ss := &astx.StructSpec{
-							Pkg:         ps.Pkg,
+							Pkg:         aw.Pkg,
 							Name:        specVal.Name.String(),
 							Comments:    comments,
 							Fields:      make([]*astx.FieldSpec, 0),
 							Methods:     make([]*astx.MethodSpec, 0),
 							Annotations: make([]*astx.Annotation, 0),
+						}
+
+						if fields := st.Fields; fields != nil && fields.List != nil {
+							for _, field := range fields.List {
+								fs := &astx.FieldSpec{
+									Struct: specVal.Name.String(),
+									Name:   field.Names[0].Name,
+									Tags:   make([]*astx.TagSpec, 0),
+								}
+
+								if fieldTag := field.Tag; fieldTag != nil {
+									tagValue := fieldTag.Value               // `xxx:"xv" yyy:"yv"`
+									tagValue = tagValue[1 : len(tagValue)-1] // xxx:"xv" yyy:"yv"
+									ts := &astx.TagSpec{
+										Field: fs.Name,
+										Tags:  make([]*astx.Tag, 0),
+									}
+									tvs := strings.Split(tagValue, " ")
+									for _, tv := range tvs {
+										kvs := strings.Split(tv, ":")
+										k := kvs[0]                    // xxx | yyy
+										v := kvs[1][1 : len(kvs[1])-1] // xv | yv
+										tag := &astx.Tag{
+											Name:  fieldTag.Value,
+											Key:   k,
+											Value: v,
+										}
+										ts.Tags = append(ts.Tags, tag)
+									}
+
+									fs.Tags = append(fs.Tags, ts)
+								}
+
+								ss.Fields = append(ss.Fields, fs)
+							}
 						}
 
 						ss.Type = st.Struct
@@ -132,30 +169,73 @@ func (psr parser) ParseInterfaces(aw *astx.Astx, ps *astx.PackageSpec) {
 
 func (psr parser) ParseMethods(aw *astx.Astx, ps *astx.PackageSpec) {
 	for _, d := range aw.Ast.Decls {
-		switch decl := d.(type) {
+		switch funcDecl := d.(type) {
 		case *ast.FuncDecl:
-			comments := make([]string, 0, len(decl.Doc.List))
-			if decl.Doc != nil {
-				for _, comment := range decl.Doc.List {
+			comments := make([]string, 0)
+			if funcDecl.Doc != nil {
+				for _, comment := range funcDecl.Doc.List {
 					comments = append(comments, comment.Text)
 				}
 			}
-			if decl.Recv != nil {
-				for _, field := range decl.Recv.List {
-					id := field.Type.(*ast.Ident)
-					for _, spec := range ps.Structs {
-						structName := spec.Name
-						if structName == id.Name {
-							ms := &astx.MethodSpec{
-								Pkg:      aw.Pkg,
-								Name:     decl.Name.String(),
-								Struct:   structName,
-								Comments: comments,
-								Params:   make([]*astx.ParamSpec, 0),
-								Returns:  make([]*astx.ReturnSpec, 0),
+			if funcDecl.Recv != nil {
+				for _, field := range funcDecl.Recv.List {
+					switch ft := field.Type.(type) {
+					case *ast.Ident:
+						for _, spec := range ps.Structs {
+							structName := spec.Name
+							if structName == ft.Name {
+								ms := &astx.MethodSpec{
+									Pkg:      ps.Pkg,
+									Struct:   structName,
+									Name:     funcDecl.Name.String(),
+									Comments: comments,
+									Params:   make([]*astx.ParamSpec, 0),
+									Returns:  make([]*astx.ReturnSpec, 0),
+								}
+
+								hasParams := funcDecl.Type != nil && funcDecl.Type.Params != nil && funcDecl.Type.Params.List != nil
+								if hasParams {
+									for _, param := range funcDecl.Type.Params.List {
+										for _, pn := range param.Names {
+											pms := &astx.ParamSpec{
+												Pkg:      ps.Pkg,
+												FuncName: funcDecl.Name.String(),
+												Name:     pn.Name,
+											}
+											if expr, ok := param.Type.(*ast.SelectorExpr); ok {
+												sel := expr.Sel
+												if x, okx := expr.X.(*ast.Ident); okx {
+
+													pt := fmt.Sprintf("%s.%s", x.Name, sel.Name)
+													pms.Type = pt
+												}
+											}
+											ms.Params = append(ms.Params, pms)
+										}
+									}
+								}
+
+								hasResults := funcDecl.Type != nil && funcDecl.Type.Results != nil && funcDecl.Type.Results.List != nil
+								if hasResults {
+									for _, rvt := range funcDecl.Type.Results.List {
+										rs := &astx.ReturnSpec{
+											Pkg:      ps.Pkg,
+											FuncName: funcDecl.Name.String(),
+										}
+										if names := rvt.Names; names != nil {
+											rs.Name = rvt.Names[0].Name
+										}
+										if expr, ok := rvt.Type.(*ast.Ident); ok {
+											rs.Type = expr.Name
+										}
+										ms.Returns = append(ms.Returns, rs)
+									}
+								}
+								spec.Methods = append(spec.Methods, ms)
 							}
-							spec.Methods = append(spec.Methods, ms)
 						}
+					case *ast.StarExpr:
+						// do nothing
 					}
 				}
 			}
@@ -167,7 +247,7 @@ func (psr parser) ParseFuncs(aw *astx.Astx, ps *astx.PackageSpec) {
 	for _, d := range aw.Ast.Decls {
 		switch decl := d.(type) {
 		case *ast.FuncDecl:
-			comments := make([]string, 0, len(decl.Doc.List))
+			comments := make([]string, 0)
 			if decl.Doc != nil {
 				for _, comment := range decl.Doc.List {
 					comments = append(comments, comment.Text)

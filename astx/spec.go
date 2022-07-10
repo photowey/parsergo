@@ -50,7 +50,7 @@ type FieldSpec struct {
 	Struct string
 	Name   string
 	Type   string
-	Tags   []TagSpec
+	Tags   []*TagSpec
 }
 
 type InterfaceSpec struct {
@@ -101,9 +101,10 @@ type Annotation struct {
 
 type TagSpec struct {
 	Field string
-	Tags  []Tag
+	Tags  []*Tag
 }
 type Tag struct {
+	Name  string
 	Key   string
 	Value string
 }
