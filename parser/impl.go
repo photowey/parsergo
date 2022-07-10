@@ -40,8 +40,6 @@ func (psr parser) Parse(pkg *loader.Package) *astx.AstSpec {
 			continue
 		}
 
-		psr.ParseMethods(aw, ps)
-
 		pkgs = append(pkgs, ps)
 	}
 
@@ -155,6 +153,8 @@ func (psr parser) ParseStructs(aw *astx.Astx) *astx.PackageSpec {
 		}
 	}
 
+	psr.ParseMethods(aw, ps)
+
 	return ps
 }
 
@@ -266,16 +266,33 @@ func (psr parser) ParseMethods(aw *astx.Astx, ps *astx.PackageSpec) {
 										rs := &astx.ReturnSpec{
 											Pkg:      ps.Pkg,
 											FuncName: funcDecl.Name.String(),
+											Ptr:      false,
 										}
 										if names := rvt.Names; names != nil {
 											rs.Name = rvt.Names[0].Name
 										}
-										if expr, ok := rvt.Type.(*ast.Ident); ok {
-											rs.Type = expr.Name
+
+										switch rvtType := rvt.Type.(type) {
+										case *ast.Ident:
+											rs.Type = rvtType.Name
+										case *ast.StarExpr:
+											switch xt := rvtType.X.(type) {
+											case *ast.Ident:
+												rs.Type = fmt.Sprintf("*%s", xt.Name)
+											case *ast.SelectorExpr:
+												if x, okx := xt.X.(*ast.Ident); okx {
+													rs.Type = fmt.Sprintf("*%s.%s", x.Name, xt.Sel.Name)
+												} else {
+													rs.Type = fmt.Sprintf("*%s", xt.Sel.Name)
+												}
+											}
+											rs.Ptr = true
 										}
+
 										ms.Returns = append(ms.Returns, rs)
 									}
 								}
+
 								spec.Methods = append(spec.Methods, ms)
 							}
 						}

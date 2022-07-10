@@ -92,6 +92,7 @@ type ReturnSpec struct {
 	Pkg      string
 	FuncName string
 	Name     string
+	Ptr      bool
 	Type     string
 }
 
