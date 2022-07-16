@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package Regexpx
+package regexpx
 
 import (
 	"regexp"

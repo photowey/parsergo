@@ -23,7 +23,7 @@ import (
 
 	"github.com/photowey/parsergo/astx"
 	"github.com/photowey/parsergo/loader"
-	"github.com/photowey/parsergo/pkg/Regexpx"
+	"github.com/photowey/parsergo/pkg/regexpx"
 )
 
 type parser struct{}
@@ -207,10 +207,10 @@ func (psr parser) ParseAnnotations(aw *astx.Astx, ps *astx.PackageSpec) {
 					Alias: spec.Alias,
 					Anno:  comment,
 				}
-				anno.Name = Regexpx.RegexpExtract(`^@(?P<annotation>[\S]+)\(.*\)`, cmt, "$annotation")
+				anno.Name = regexpx.RegexpExtract(`^@(?P<annotation>[\S]+)\(.*\)`, cmt, "$annotation")
 				if strings.Contains(cmt, "(") && strings.Contains(cmt, "(") {
 					// `// @Service("helloService")`
-					anno.Values = Regexpx.RegexpExtract(`^@.*\((?P<value>[\S]+)\)`, cmt, "$value")
+					anno.Values = regexpx.RegexpExtract(`^@.*\((?P<value>[\S]+)\)`, cmt, "$value")
 				}
 
 				spec.Annotations = append(spec.Annotations, anno)

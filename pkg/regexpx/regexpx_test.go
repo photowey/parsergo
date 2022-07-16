@@ -1,4 +1,4 @@
-package Regexpx
+package regexpx
 
 import (
 	"testing"
