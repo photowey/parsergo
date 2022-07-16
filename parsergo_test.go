@@ -46,6 +46,10 @@ func Test_scanner_Scan(t *testing.T) {
 			if len(got) != tt.want {
 				t.Errorf("scan the path:%s error: got %v, want %v", scr.Paths, len(got), tt.want)
 			}
+
+			// TODO assert struct
+			// TODO assert methods
+			// TODO assert annotations
 		})
 	}
 }
