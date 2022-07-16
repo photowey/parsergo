@@ -98,6 +98,8 @@ type ReturnSpec struct {
 
 type Annotation struct {
 	Pkg    string
+	Anno   string
+	Alias  string
 	Name   string
 	Values string // maybe json ?
 }

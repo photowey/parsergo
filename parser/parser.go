@@ -27,6 +27,7 @@ type Parser interface {
 	InterfaceParser
 	MethodParser
 	FuncParser
+	AnnotationParser
 }
 
 type StructParser interface {
@@ -43,4 +44,8 @@ type MethodParser interface {
 
 type FuncParser interface {
 	ParseFuncs(aw *astx.Astx, ps *astx.PackageSpec)
+}
+
+type AnnotationParser interface {
+	ParseAnnotations(aw *astx.Astx, ps *astx.PackageSpec)
 }
