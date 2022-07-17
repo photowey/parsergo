@@ -42,6 +42,24 @@ func TestRegexpExtract(t *testing.T) {
 			},
 			want: "{\"path\":\"github.com/photowey/parsergo/tests\",\"excludes\":[\"github.com/photowey/parsergo/tests/structx\"]}",
 		},
+		{
+			name: "Test extract annotation name without value",
+			args: args{
+				regex: `^@(?P<annotation>[\S]+)[\(.*\)]?`,
+				src:   "@App",
+				temp:  "$annotation",
+			},
+			want: "App",
+		},
+		{
+			name: "Test extract annotation value without value",
+			args: args{
+				regex: `^@.*\((?P<value>[\S]+)\)`,
+				src:   "@App",
+				temp:  "$value",
+			},
+			want: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
