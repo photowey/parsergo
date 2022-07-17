@@ -207,8 +207,8 @@ func (psr parser) ParseAnnotations(aw *astx.Astx, ps *astx.PackageSpec) {
 					Alias: spec.Alias,
 					Anno:  comment,
 				}
-				anno.Name = regexpx.RegexpExtract(`^@(?P<annotation>[\S]+)\(.*\)`, cmt, "$annotation")
-				if strings.Contains(cmt, "(") && strings.Contains(cmt, "(") {
+				anno.Name = regexpx.RegexpExtract(`^@(?P<annotation>[\S]+)[\(.*\)]?`, cmt, "$annotation")
+				if strings.Contains(cmt, "(") && strings.Contains(cmt, ")") {
 					// `// @Service("helloService")`
 					anno.Values = regexpx.RegexpExtract(`^@.*\((?P<value>[\S]+)\)`, cmt, "$value")
 				}
