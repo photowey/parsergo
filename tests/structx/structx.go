@@ -23,6 +23,10 @@ import (
 type HelloService interface {
 	SayHello(name string) string
 	MultiLineFunc(name string, age *int) (string, error)
+	SliceParamFunc(name string, hobbies []string) (string, error)                 // TODO parse
+	MapParamFunc(name string, info map[string]string) (string, error)             // TODO parse
+	SliceReturnFunc(name string, hobbies []string) ([]string, error)              // TODO parse
+	MapReturnFunc(name string, info map[string]string) (map[string]string, error) // TODO parse
 }
 
 // HelloServiceImpl An implementation of the HelloService interface
@@ -39,4 +43,20 @@ func (s *HelloServiceImpl) MultiLineFunc(
 	age *int,
 ) (string, error) {
 	return fmt.Sprintf("Hello %s, age %d", name, age), nil
+}
+
+func (s *HelloServiceImpl) SliceParamFunc(name string, hobbies []string) (string, error) {
+	return fmt.Sprintf("Hello %s, hobbies %v", name, hobbies), nil
+}
+
+func (s *HelloServiceImpl) MapParamFunc(name string, info map[string]string) (string, error) {
+	return fmt.Sprintf("Hello %s, hobbies %v", name, info), nil
+}
+
+func (s *HelloServiceImpl) SliceReturnFunc(name string, hobbies []string) ([]string, error) {
+	return hobbies, nil
+}
+
+func (s *HelloServiceImpl) MapReturnFunc(name string, info map[string]string) (map[string]string, error) {
+	return info, nil
 }
